@@ -1,8 +1,9 @@
 #ifndef MLP4ML_HPP
 #define MLP4ML_HPP
 
-#include "algebra.hpp"
-
+#include "../AlgebraWithSTL/algebra.hpp"
+// for matlab copy algebra.* to this directory an include it from here
+// #include "algebra.hpp"
 using namespace alg;
 
 class MLP4ML {
