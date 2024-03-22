@@ -20,30 +20,30 @@ class MLP4ML {
     private:
 
         D const
-        * __input;
+        * input__;
 
         SIZE
-        __numOfInputs;
+        numOfInputs__;
 
         MD
-        __out,
-        __net,
-        __delta,
-        __bias,
-        __sumBias;
+        out__,
+        net__,
+        delta__,
+        bias__,
+        sumBias__;
 
         TD
-        __weights,
-        __sumWeights;
+        weights__,
+        sumWeights__;
 
         MLP4ML
         & resetAccumulators() {
-            for (SIZE layerID = 0; layerID < len(this->__sumWeights); ++ layerID) {
-                for (SIZE toID = 0; toID < len(this->__sumWeights[layerID]); ++ toID) {
-                    for (SIZE fromID = 0; fromID < len(this->__sumWeights[layerID][toID]); ++ fromID) {
-                        this->__sumWeights[layerID][toID][fromID] = 0.;
+            for (SIZE layerID = 0; layerID < len(this->sumWeights__); ++ layerID) {
+                for (SIZE toID = 0; toID < len(this->sumWeights__[layerID]); ++ toID) {
+                    for (SIZE fromID = 0; fromID < len(this->sumWeights__[layerID][toID]); ++ fromID) {
+                        this->sumWeights__[layerID][toID][fromID] = 0.;
                     }
-                    this->__sumBias[layerID][toID] = 0.;
+                    this->sumBias__[layerID][toID] = 0.;
                 }
             }
 
@@ -68,22 +68,22 @@ class MLP4ML {
         eta(pEta),
         weightsMin(pWeightsMin),
         weightsMax(pWeightsMax),
-        __input(nullptr),
-        __numOfInputs(pLayerSizes[0]) {
+        input__(nullptr),
+        numOfInputs__(pLayerSizes[0]) {
             for (SIZE layerID = 1; layerID < len(pLayerSizes); ++ layerID) {
-                this->__out.push_back(vcnst(pLayerSizes[layerID], 0.));
-                this->__net.push_back(vcnst(pLayerSizes[layerID], 0.));
-                this->__delta.push_back(vcnst(pLayerSizes[layerID], 0.));
-                this->__bias.push_back(weightsMin + (weightsMax - weightsMin) * vrnd(pLayerSizes[layerID]));
-                this->__sumBias.push_back(vcnst(pLayerSizes[layerID]));
-                this->__weights.push_back(weightsMin + (weightsMax - weightsMin) * mrnd(pLayerSizes[layerID], pLayerSizes[layerID-1]));
-                this->__sumWeights.push_back(mcnst(pLayerSizes[layerID], pLayerSizes[layerID-1]));
+                this->out__.push_back(vcnst(pLayerSizes[layerID], 0.));
+                this->net__.push_back(vcnst(pLayerSizes[layerID], 0.));
+                this->delta__.push_back(vcnst(pLayerSizes[layerID], 0.));
+                this->bias__.push_back(weightsMin + (weightsMax - weightsMin) * vrnd(pLayerSizes[layerID]));
+                this->sumBias__.push_back(vcnst(pLayerSizes[layerID]));
+                this->weights__.push_back(weightsMin + (weightsMax - weightsMin) * mrnd(pLayerSizes[layerID], pLayerSizes[layerID-1]));
+                this->sumWeights__.push_back(mcnst(pLayerSizes[layerID], pLayerSizes[layerID-1]));
             }
         }
 
         VD const
         & output() const {
-            return this->__out[len(this->__out) - 1];
+            return this->out__[len(this->out__) - 1];
         }
         
         MLP4ML
@@ -95,7 +95,7 @@ class MLP4ML {
         MLP4ML
         & remember(D const * const & pPatternData) {
 
-            this->__input = pPatternData;
+            this->input__ = pPatternData;
             
             SIZE
             layerID = 0;
@@ -103,35 +103,35 @@ class MLP4ML {
             D
             s;
             
-            for (SIZE toID = 0; toID < len(this->__out[layerID]); ++toID) {
+            for (SIZE toID = 0; toID < len(this->out__[layerID]); ++toID) {
                 s = 0;
-                for (SIZE fromID = 0; fromID < this->__numOfInputs; ++fromID) {
-                    s += this->__weights[layerID][toID][fromID] * this->__input[fromID];
+                for (SIZE fromID = 0; fromID < this->numOfInputs__; ++fromID) {
+                    s += this->weights__[layerID][toID][fromID] * this->input__[fromID];
                 }
-                this->__net[layerID][toID] = s - this->__bias[layerID][toID];
-                this->__out[layerID][toID] = 0. < this->__net[layerID][toID] ? this->__net[layerID][toID] : 0.;
+                this->net__[layerID][toID] = s - this->bias__[layerID][toID];
+                this->out__[layerID][toID] = 0. < this->net__[layerID][toID] ? this->net__[layerID][toID] : 0.;
             }
             
-            while (++ layerID < len(this->__out) - 1) {
-                for (SIZE toID = 0; toID < len(this->__out[layerID]); ++toID) {
+            while (++ layerID < len(this->out__) - 1) {
+                for (SIZE toID = 0; toID < len(this->out__[layerID]); ++toID) {
                     s = 0;
-                    for (SIZE fromID = 0; fromID < len(this->__out[layerID - 1]); ++fromID) {
-                        s += this->__weights[layerID][toID][fromID] * this->__out[layerID - 1][fromID];
+                    for (SIZE fromID = 0; fromID < len(this->out__[layerID - 1]); ++fromID) {
+                        s += this->weights__[layerID][toID][fromID] * this->out__[layerID - 1][fromID];
                     }
-                    this->__net[layerID][toID] = s - this->__bias[layerID][toID];
-                    this->__out[layerID][toID] = 0. < this->__net[layerID][toID] ? this->__net[layerID][toID] : 0.;
+                    this->net__[layerID][toID] = s - this->bias__[layerID][toID];
+                    this->out__[layerID][toID] = 0. < this->net__[layerID][toID] ? this->net__[layerID][toID] : 0.;
                 }
             }
 
-            for (SIZE toID = 0; toID < len(this->__out[layerID]); ++toID) {
+            for (SIZE toID = 0; toID < len(this->out__[layerID]); ++toID) {
                 s = 0;
-                for (SIZE fromID = 0; fromID < len(this->__out[layerID - 1]); ++fromID) {
-                    s += this->__weights[layerID][toID][fromID] * this->__out[layerID - 1][fromID];
+                for (SIZE fromID = 0; fromID < len(this->out__[layerID - 1]); ++fromID) {
+                    s += this->weights__[layerID][toID][fromID] * this->out__[layerID - 1][fromID];
                 }
-                this->__net[layerID][toID] = s - this->__bias[layerID][toID];
+                this->net__[layerID][toID] = s - this->bias__[layerID][toID];
             }
             
-            return softmax(this->__net[layerID], this->__out[layerID]);
+            return softmax(this->net__[layerID], this->out__[layerID]);
         }
 
         MLP4ML
@@ -148,75 +148,75 @@ class MLP4ML {
                 SIZE
                 layerID = 0;
 
-                patternsPtr = pPatterns.data() + batchID * this->__numOfInputs;
+                patternsPtr = pPatterns.data() + batchID * this->numOfInputs__;
                 
                 remember(patternsPtr);
 
                 D
                 s;
                 
-                // for (SIZE toID = 0; toID < len(this->__out[layerID]); ++toID) {
+                // for (SIZE toID = 0; toID < len(this->out__[layerID]); ++toID) {
                 //     s = 0;
-                //     for (SIZE fromID = 0; fromID < this->__numOfInputs; ++fromID) {
-                //         s += this->__weights[layerID][toID][fromID] * patternsPtr[fromID];
+                //     for (SIZE fromID = 0; fromID < this->numOfInputs__; ++fromID) {
+                //         s += this->weights__[layerID][toID][fromID] * patternsPtr[fromID];
                 //     }
-                //     this->__net[layerID][toID] = s - this->__bias[layerID][toID];
-                //     this->__out[layerID][toID] = 0. < this->__net[layerID][toID] ? this->__net[layerID][toID] : 0.;
+                //     this->net__[layerID][toID] = s - this->bias__[layerID][toID];
+                //     this->out__[layerID][toID] = 0. < this->net__[layerID][toID] ? this->net__[layerID][toID] : 0.;
                 // }
                 
-                // while (++ layerID < len(this->__out) - 1) {
-                //     for (SIZE toID = 0; toID < len(this->__out[layerID]); ++toID) {
+                // while (++ layerID < len(this->out__) - 1) {
+                //     for (SIZE toID = 0; toID < len(this->out__[layerID]); ++toID) {
                 //         s = 0;
-                //         for (SIZE fromID = 0; fromID < len(this->__out[layerID - 1]); ++fromID) {
-                //             s += this->__weights[layerID][toID][fromID] * this->__out[layerID - 1][fromID];
+                //         for (SIZE fromID = 0; fromID < len(this->out__[layerID - 1]); ++fromID) {
+                //             s += this->weights__[layerID][toID][fromID] * this->out__[layerID - 1][fromID];
                 //         }
-                //         this->__net[layerID][toID] = s - this->__bias[layerID][toID];
-                //         this->__out[layerID][toID] = 0. < this->__net[layerID][toID] ? this->__net[layerID][toID] : 0.;
+                //         this->net__[layerID][toID] = s - this->bias__[layerID][toID];
+                //         this->out__[layerID][toID] = 0. < this->net__[layerID][toID] ? this->net__[layerID][toID] : 0.;
                 //     }
                 // }
 
-                // for (SIZE toID = 0; toID < len(this->__out[layerID]); ++toID) {
+                // for (SIZE toID = 0; toID < len(this->out__[layerID]); ++toID) {
                 //     s = 0;
-                //     for (SIZE fromID = 0; fromID < len(this->__out[layerID - 1]); ++fromID) {
-                //         s += this->__weights[layerID][toID][fromID] * this->__out[layerID - 1][fromID];
+                //     for (SIZE fromID = 0; fromID < len(this->out__[layerID - 1]); ++fromID) {
+                //         s += this->weights__[layerID][toID][fromID] * this->out__[layerID - 1][fromID];
                 //     }
-                //     this->__net[layerID][toID] = s - this->__bias[layerID][toID];
+                //     this->net__[layerID][toID] = s - this->bias__[layerID][toID];
                 // }
                 
-                // softmax(this->__net[layerID], this->__out[layerID]);
+                // softmax(this->net__[layerID], this->out__[layerID]);
 
                 // teach                
-                layerID = len(this->__out) - 1;
+                layerID = len(this->out__) - 1;
 
-                for (SIZE neuronID = 0; neuronID < len(this->__delta[layerID]); ++ neuronID) {
-                    this->__delta[layerID][neuronID] = -this->__out[layerID][neuronID];                
+                for (SIZE neuronID = 0; neuronID < len(this->delta__[layerID]); ++ neuronID) {
+                    this->delta__[layerID][neuronID] = -this->out__[layerID][neuronID];                
                 }
-                this->__delta[layerID][pLabels[batchID]] += 1.;
+                this->delta__[layerID][pLabels[batchID]] += 1.;
 
                 while (0 < layerID) {
                     -- layerID;
-                    for (SIZE neuronFromID = 0; neuronFromID < this->__delta[layerID].size(); ++ neuronFromID) {
+                    for (SIZE neuronFromID = 0; neuronFromID < this->delta__[layerID].size(); ++ neuronFromID) {
                         s = 0.;
-                        for (SIZE neuronToID = 0; neuronToID < this->__delta[layerID + 1].size(); ++ neuronToID) {
-                            s += this->__delta[layerID + 1][neuronToID] * this->__weights[layerID + 1][neuronToID][neuronFromID];
+                        for (SIZE neuronToID = 0; neuronToID < this->delta__[layerID + 1].size(); ++ neuronToID) {
+                            s += this->delta__[layerID + 1][neuronToID] * this->weights__[layerID + 1][neuronToID][neuronFromID];
                         }
-                        this->__delta[layerID][neuronFromID] = (0 < this->__out[layerID][neuronFromID] ? 1 : .001) * s;
+                        this->delta__[layerID][neuronFromID] = (0 < this->out__[layerID][neuronFromID] ? 1 : .001) * s;
                     }
                 }
 
-                for (SIZE toID = 0; toID < len(this->__out[layerID]); ++ toID) {
-                    for (SIZE fromID = 0; fromID < this->__numOfInputs; ++ fromID) {
-                        this->__sumWeights[layerID][toID][fromID] += patternsPtr[fromID] * this->__delta[layerID][toID];
+                for (SIZE toID = 0; toID < len(this->out__[layerID]); ++ toID) {
+                    for (SIZE fromID = 0; fromID < this->numOfInputs__; ++ fromID) {
+                        this->sumWeights__[layerID][toID][fromID] += patternsPtr[fromID] * this->delta__[layerID][toID];
                     }
-                    this->__sumBias[layerID][toID] -= this->__delta[layerID][toID]; 
+                    this->sumBias__[layerID][toID] -= this->delta__[layerID][toID]; 
                 }
                 
-                while (++ layerID < len(this->__out)) {
-                    for (SIZE toID = 0; toID < len(this->__out[layerID]); ++ toID) {
-                        for (SIZE fromID = 0; fromID < len(this->__out[layerID - 1]); ++ fromID) {
-                            this->__sumWeights[layerID][toID][fromID] += this->__out[layerID-1][fromID] * this->__delta[layerID][toID];
+                while (++ layerID < len(this->out__)) {
+                    for (SIZE toID = 0; toID < len(this->out__[layerID]); ++ toID) {
+                        for (SIZE fromID = 0; fromID < len(this->out__[layerID - 1]); ++ fromID) {
+                            this->sumWeights__[layerID][toID][fromID] += this->out__[layerID-1][fromID] * this->delta__[layerID][toID];
                         }
-                        this->__sumBias[layerID][toID] -= this->__delta[layerID][toID]; 
+                        this->sumBias__[layerID][toID] -= this->delta__[layerID][toID]; 
                     }
                 }
     
@@ -225,11 +225,11 @@ class MLP4ML {
                     
                 while (0 < layerID) {
                     -- layerID;
-                    for (SIZE toID = 0; toID < len(this->__weights[layerID]); ++ toID) {
-                        for (SIZE fromID = 0; fromID < len(this->__weights[layerID][toID]); ++ fromID) {
-                            this->__weights[layerID][toID][fromID] += factor * this->__sumWeights[layerID][toID][fromID];
+                    for (SIZE toID = 0; toID < len(this->weights__[layerID]); ++ toID) {
+                        for (SIZE fromID = 0; fromID < len(this->weights__[layerID][toID]); ++ fromID) {
+                            this->weights__[layerID][toID][fromID] += factor * this->sumWeights__[layerID][toID][fromID];
                         }
-                        this->__bias[layerID][toID] -= factor * this->__sumBias[layerID][toID]; 
+                        this->bias__[layerID][toID] -= factor * this->sumBias__[layerID][toID]; 
                     }
                 }
             }
@@ -241,40 +241,40 @@ class MLP4ML {
         & teach(SIZE const & pLabel) {
 
             SIZE
-            layerID = len(this->__out) - 1;
+            layerID = len(this->out__) - 1;
 
-            for (SIZE neuronID = 0; neuronID < this->__delta[layerID].size(); ++ neuronID) {
-                this->__delta[layerID][neuronID] = -this->__out[layerID][neuronID];                
+            for (SIZE neuronID = 0; neuronID < this->delta__[layerID].size(); ++ neuronID) {
+                this->delta__[layerID][neuronID] = -this->out__[layerID][neuronID];                
             }
-            this->__delta[layerID][pLabel] += 1.;
+            this->delta__[layerID][pLabel] += 1.;
 
             D
             s;
 
             while (0 < layerID) {
                  -- layerID;
-                for (SIZE neuronFromID = 0; neuronFromID < this->__delta[layerID].size(); ++ neuronFromID) {
+                for (SIZE neuronFromID = 0; neuronFromID < this->delta__[layerID].size(); ++ neuronFromID) {
                     s = 0.;
-                    for (SIZE neuronToID = 0; neuronToID < this->__delta[layerID + 1].size(); ++ neuronToID) {
-                        s += this->__delta[layerID + 1][neuronToID] * this->__weights[layerID + 1][neuronToID][neuronFromID];
+                    for (SIZE neuronToID = 0; neuronToID < this->delta__[layerID + 1].size(); ++ neuronToID) {
+                        s += this->delta__[layerID + 1][neuronToID] * this->weights__[layerID + 1][neuronToID][neuronFromID];
                     }
-                    this->__delta[layerID][neuronFromID] = (0 < this->__out[layerID][neuronFromID] ? 1 : .001) * s;
+                    this->delta__[layerID][neuronFromID] = (0 < this->out__[layerID][neuronFromID] ? 1 : .001) * s;
                 }
             }
 
-            for (SIZE toID = 0; toID < len(this->__out[layerID]); ++ toID) {
-                for (SIZE fromID = 0; fromID < this->__numOfInputs; ++ fromID) {
-                    this->__weights[layerID][toID][fromID] += eta * this->__input[fromID] * this->__delta[layerID][toID];
+            for (SIZE toID = 0; toID < len(this->out__[layerID]); ++ toID) {
+                for (SIZE fromID = 0; fromID < this->numOfInputs__; ++ fromID) {
+                    this->weights__[layerID][toID][fromID] += eta * this->input__[fromID] * this->delta__[layerID][toID];
                 }
-                this->__bias[layerID][toID] -= eta * this->__delta[layerID][toID]; 
+                this->bias__[layerID][toID] -= eta * this->delta__[layerID][toID]; 
             }
             
-            while (++ layerID < len(this->__out)) {
-                for (SIZE toID = 0; toID < len(this->__out[layerID]); ++ toID) {
-                    for (SIZE fromID = 0; fromID < len(this->__out[layerID - 1]); ++ fromID) {
-                        this->__weights[layerID][toID][fromID] += eta * this->__out[layerID-1][fromID] * this->__delta[layerID][toID];
+            while (++ layerID < len(this->out__)) {
+                for (SIZE toID = 0; toID < len(this->out__[layerID]); ++ toID) {
+                    for (SIZE fromID = 0; fromID < len(this->out__[layerID - 1]); ++ fromID) {
+                        this->weights__[layerID][toID][fromID] += eta * this->out__[layerID-1][fromID] * this->delta__[layerID][toID];
                     }
-                    this->__bias[layerID][toID] -= eta * this->__delta[layerID][toID]; 
+                    this->bias__[layerID][toID] -= eta * this->delta__[layerID][toID]; 
                 }
             }
 
@@ -297,7 +297,7 @@ class MLP4ML {
         label() const {
 
             VD const
-            & o = this->__out[len(this->__out) - 1];
+            & o = this->out__[len(this->out__) - 1];
 
             return static_cast<SIZE>(std::max_element(o.cbegin(), o.cend()) - o.cbegin());
         }
