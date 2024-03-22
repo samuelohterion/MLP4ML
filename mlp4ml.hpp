@@ -2,6 +2,7 @@
 #define MLP4ML_HPP
 
 #include "../AlgebraWithSTL/algebra.hpp"
+#include<bits/stdc++.h>
 // for matlab copy algebra.* to this directory an include it from here
 // #include "algebra.hpp"
 using namespace alg;
@@ -15,20 +16,28 @@ class MLP4ML {
         weightsMin,
         weightsMax;
 
-        VD
-        input;
+    private:
+
+        VD const
+        * __input;
+
+        SIZE
+        __numOfInputs;
 
         MD
-        outputs,
-        netsums,
-        deltas,
-        bias;
+        __out,
+        __net,
+        __delta,
+        __bias,
+        __sumBias;
 
         TD
-        weights;
+        __weights,
+        __sumWeights;
 
         MLP4ML
         & softmax(VD const & pNetSums, VD & pOutputs) {
+
             D  m = *std::max_element(pNetSums.cbegin(), pNetSums.cend());
             std::transform(pNetSums.cbegin(), pNetSums.cend(), pOutputs.begin(), [m](D const &x){return exp(x - m);});
             
@@ -40,24 +49,33 @@ class MLP4ML {
         
     public:
 
-        MLP4ML(IDX const & pLayerSizes, D const &pEta = .001, D const &pWeightsMin = -.1, D const &pWeightsMax = +.1) :
+        MLP4ML(IDX const & pLayerSizes, D const &pEta = .1, D const &pWeightsMin = -.1, D const &pWeightsMax = +.1) :
         eta(pEta),
         weightsMin(pWeightsMin),
         weightsMax(pWeightsMax),
-        input(pLayerSizes[0], 0.) {
+        __input(nullptr),
+        __numOfInputs(pLayerSizes[0]) {
             for (SIZE layerID = 1; layerID < pLayerSizes.size(); ++ layerID) {
-                outputs.push_back(vcnst(pLayerSizes[layerID], 0.));
-                netsums.push_back(vcnst(pLayerSizes[layerID], 0.));
-                deltas.push_back(vcnst(pLayerSizes[layerID], 0.));
-                bias.push_back(weightsMin + (weightsMax - weightsMin) * vrnd(pLayerSizes[layerID]));
-                weights.push_back(weightsMin + (weightsMax - weightsMin) * mrnd(pLayerSizes[layerID], pLayerSizes[layerID-1]));
+                __out.push_back(vcnst(pLayerSizes[layerID], 0.));
+                __net.push_back(vcnst(pLayerSizes[layerID], 0.));
+                __delta.push_back(vcnst(pLayerSizes[layerID], 0.));
+                __bias.push_back(weightsMin + (weightsMax - weightsMin) * vrnd(pLayerSizes[layerID]));
+                __sumBias.push_back(vcnst(pLayerSizes[layerID]));
+                __weights.push_back(weightsMin + (weightsMax - weightsMin) * mrnd(pLayerSizes[layerID], pLayerSizes[layerID-1]));
+                __sumWeights.push_back(mcnst(pLayerSizes[layerID], pLayerSizes[layerID-1]));
             }
         }
 
+        VD const
+        & output() const {
+            return __out[len(__out) - 1];
+        }
+        
         MLP4ML
         & remember(VD const & pPattern) {
 
-            input.assign(pPattern.cbegin(), pPattern.cend());
+            // __input.assign(pPattern.cbegin(), pPattern.cend());
+            __input = &pPattern;
             
             SIZE
             layerID = 0;
@@ -65,78 +83,300 @@ class MLP4ML {
             D
             s;
             
-            for (SIZE toID = 0; toID < len(outputs[layerID]); ++toID) {
+            for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
                 s = 0;
-                for (SIZE fromID = 0; fromID < len(input); ++fromID) {
-                    s += weights[layerID][toID][fromID] * input[fromID];
+                for (SIZE fromID = 0; fromID < __input->size(); ++fromID) {
+                    s += __weights[layerID][toID][fromID] * (*__input)[fromID];
                 }
-                netsums[layerID][toID] = s - bias[layerID][toID];
-                outputs[layerID][toID] = 0. < netsums[layerID][toID] ? netsums[layerID][toID] : 0.;
+                __net[layerID][toID] = s - __bias[layerID][toID];
+                __out[layerID][toID] = 0. < __net[layerID][toID] ? __net[layerID][toID] : 0.;
             }
             
-            while (++ layerID < len(outputs) - 1) {
-                for (SIZE toID = 0; toID < len(outputs[layerID]); ++toID) {
+            while (++ layerID < len(__out) - 1) {
+                for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
                     s = 0;
-                    for (SIZE fromID = 0; fromID < len(outputs[layerID - 1]); ++fromID) {
-                        s += weights[layerID][toID][fromID] * outputs[layerID - 1][fromID];
+                    for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++fromID) {
+                        s += __weights[layerID][toID][fromID] * __out[layerID - 1][fromID];
                     }
-                    netsums[layerID][toID] = s - bias[layerID][toID];
-                    outputs[layerID][toID] = 0. < netsums[layerID][toID] ? netsums[layerID][toID] : 0.;
+                    __net[layerID][toID] = s - __bias[layerID][toID];
+                    __out[layerID][toID] = 0. < __net[layerID][toID] ? __net[layerID][toID] : 0.;
                 }
             }
 
-            for (SIZE toID = 0; toID < len(outputs[layerID]); ++toID) {
+            for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
                 s = 0;
-                for (SIZE fromID = 0; fromID < len(outputs[layerID - 1]); ++fromID) {
-                    s += weights[layerID][toID][fromID] * outputs[layerID - 1][fromID];
+                for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++fromID) {
+                    s += __weights[layerID][toID][fromID] * __out[layerID - 1][fromID];
                 }
-                netsums[layerID][toID] = s - bias[layerID][toID];
+                __net[layerID][toID] = s - __bias[layerID][toID];
             }
             
-            return softmax(netsums[layerID], outputs[layerID]);
+            return softmax(__net[layerID], __out[layerID]);
         }
 
         MLP4ML
-        & teach(VD const & pTeacher) {
+        & remember(D const * const & pPatternBegin) {
+
+            // __input.assign(pPattern.cbegin(), pPattern.cend());
+            //__input = pPatternBegin;
+            
+            SIZE
+            layerID = 0;
+            
+            D
+            s;
+            
+            for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
+                s = 0;
+                for (SIZE fromID = 0; fromID < __numOfInputs; ++fromID) {
+                    s += __weights[layerID][toID][fromID] * pPatternBegin[fromID];
+                }
+                __net[layerID][toID] = s - __bias[layerID][toID];
+                __out[layerID][toID] = 0. < __net[layerID][toID] ? __net[layerID][toID] : 0.;
+            }
+            
+            while (++ layerID < len(__out) - 1) {
+                for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
+                    s = 0;
+                    for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++fromID) {
+                        s += __weights[layerID][toID][fromID] * __out[layerID - 1][fromID];
+                    }
+                    __net[layerID][toID] = s - __bias[layerID][toID];
+                    __out[layerID][toID] = 0. < __net[layerID][toID] ? __net[layerID][toID] : 0.;
+                }
+            }
+
+            for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
+                s = 0;
+                for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++fromID) {
+                    s += __weights[layerID][toID][fromID] * __out[layerID - 1][fromID];
+                }
+                __net[layerID][toID] = s - __bias[layerID][toID];
+            }
+            
+            return softmax(__net[layerID], __out[layerID]);
+        }
+
+        MLP4ML
+        & teachBatch(VD const & pPatterns, Vec<SIZE> const & pLabels) {
+
+            for (SIZE layerID = 0; layerID < len(__sumWeights); ++ layerID) {
+                for (SIZE toID = 0; toID < len(__sumWeights[layerID]); ++ toID) {
+                    for (SIZE fromID = 0; fromID < len(__sumWeights[layerID][toID]); ++ fromID) {
+                        __sumWeights[layerID][toID][fromID] = 0.;
+                    }
+                    __sumBias[layerID][toID] = 0.;
+                }
+            }
+
+            D const
+            * patternsPtr;
+            
+            for (SIZE batchID = 0; batchID < len(pLabels); ++ batchID) {
+
+                // remember patterns
+                SIZE
+                layerID = 0;
+
+                patternsPtr = pPatterns.data() + batchID * __numOfInputs;
+                
+                D
+                s;
+                
+                for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
+                    s = 0;
+                    for (SIZE fromID = 0; fromID < __numOfInputs; ++fromID) {
+                        s += __weights[layerID][toID][fromID] * patternsPtr[fromID];
+                    }
+                    __net[layerID][toID] = s - __bias[layerID][toID];
+                    __out[layerID][toID] = 0. < __net[layerID][toID] ? __net[layerID][toID] : 0.;
+                }
+                
+                while (++ layerID < len(__out) - 1) {
+                    for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
+                        s = 0;
+                        for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++fromID) {
+                            s += __weights[layerID][toID][fromID] * __out[layerID - 1][fromID];
+                        }
+                        __net[layerID][toID] = s - __bias[layerID][toID];
+                        __out[layerID][toID] = 0. < __net[layerID][toID] ? __net[layerID][toID] : 0.;
+                    }
+                }
+
+                for (SIZE toID = 0; toID < len(__out[layerID]); ++toID) {
+                    s = 0;
+                    for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++fromID) {
+                        s += __weights[layerID][toID][fromID] * __out[layerID - 1][fromID];
+                    }
+                    __net[layerID][toID] = s - __bias[layerID][toID];
+                }
+                
+                softmax(__net[layerID], __out[layerID]);
+
+                // teach                
+                layerID = len(__out) - 1;
+
+                for (SIZE neuronID = 0; neuronID < len(__delta[layerID]); ++ neuronID) {
+                    __delta[layerID][neuronID] = -__out[layerID][neuronID];                
+                }
+                __delta[layerID][pLabels[batchID]] += 1.;
+
+                while (0 < layerID) {
+                    -- layerID;
+                    for (SIZE neuronFromID = 0; neuronFromID < __delta[layerID].size(); ++ neuronFromID) {
+                        s = 0.;
+                        for (SIZE neuronToID = 0; neuronToID < __delta[layerID + 1].size(); ++ neuronToID) {
+                            s += __delta[layerID + 1][neuronToID] * __weights[layerID + 1][neuronToID][neuronFromID];
+                        }
+                        __delta[layerID][neuronFromID] = (0 < __out[layerID][neuronFromID] ? 1 : .001) * s;
+                    }
+                }
+
+                for (SIZE toID = 0; toID < len(__out[layerID]); ++ toID) {
+                    for (SIZE fromID = 0; fromID < __numOfInputs; ++ fromID) {
+                        __sumWeights[layerID][toID][fromID] += patternsPtr[fromID] * __delta[layerID][toID];
+                    }
+                    __sumBias[layerID][toID] -= __delta[layerID][toID]; 
+                }
+                
+                while (++ layerID < len(__out)) {
+                    for (SIZE toID = 0; toID < len(__out[layerID]); ++ toID) {
+                        for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++ fromID) {
+                            __sumWeights[layerID][toID][fromID] += __out[layerID-1][fromID] * __delta[layerID][toID];
+                        }
+                        __sumBias[layerID][toID] -= __delta[layerID][toID]; 
+                    }
+                }
+    
+                D
+                factor = eta / static_cast<D>(len(pLabels));
+                    
+                while (0 < layerID) {
+                    -- layerID;
+                    for (SIZE toID = 0; toID < len(__weights[layerID]); ++ toID) {
+                        for (SIZE fromID = 0; fromID < len(__weights[layerID][toID]); ++ fromID) {
+                            __weights[layerID][toID][fromID] += factor * __sumWeights[layerID][toID][fromID];
+                        }
+                        __bias[layerID][toID] -= factor * __sumBias[layerID][toID]; 
+                    }
+                }
+            }
+
+            return *this;
+        }
+
+        // MLP4ML
+        // & teach(VD const & pTeacher) {
+
+        //     SIZE
+        //     layerID = __out.size() - 1;
+
+        //     for (SIZE neuronID = 0; neuronID < __delta[layerID].size(); ++ neuronID) {
+        //         __delta[layerID][neuronID] = pTeacher[neuronID] - __out[layerID][neuronID];
+        //     }
+
+        //     D
+        //     s;
+
+        //     while (0 < layerID) {
+        //          -- layerID;
+        //         for (SIZE neuronFromID = 0; neuronFromID < __delta[layerID].size(); ++ neuronFromID) {
+        //             s = 0.;
+        //             for (SIZE neuronToID = 0; neuronToID < __delta[layerID + 1].size(); ++ neuronToID) {
+        //                 s += __delta[layerID + 1][neuronToID] * __weights[layerID + 1][neuronToID][neuronFromID];
+        //             }
+        //             __delta[layerID][neuronFromID] = (0 < __out[layerID][neuronFromID] ? 1 : .001) * s;
+        //         }
+        //     }
+
+        //     for (SIZE toID = 0; toID < len(__out[layerID]); ++ toID) {
+        //         for (SIZE fromID = 0; fromID < __input->size(); ++ fromID) {
+        //             __weights[layerID][toID][fromID] += eta * (*__input)[fromID] * __delta[layerID][toID];
+        //         }
+        //         __bias[layerID][toID] -= eta * __delta[layerID][toID]; 
+        //     }
+            
+        //     while (++ layerID < len(__out)) {
+        //         for (SIZE toID = 0; toID < len(__out[layerID]); ++ toID) {
+        //             for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++ fromID) {
+        //                 __weights[layerID][toID][fromID] += eta * __out[layerID-1][fromID] * __delta[layerID][toID];
+        //             }
+        //             __bias[layerID][toID] -= eta * __delta[layerID][toID]; 
+        //         }
+        //     }
+
+        //     return *this;
+        // }
+
+        // MLP4ML
+        // & teach(VD const & pPattern, VD const & pTeacher) {
+        
+        //     return remember(pPattern).teach(pTeacher);
+        // }
+
+        MLP4ML
+        & teach(SIZE const & pLabel) {
 
             SIZE
-            layerID = outputs.size() - 1;
+            layerID = __out.size() - 1;
 
-            for (SIZE neuronID = 0; neuronID < deltas[layerID].size(); ++ neuronID) {
-                deltas[layerID][neuronID] = pTeacher[neuronID] - outputs[layerID][neuronID];
+            for (SIZE neuronID = 0; neuronID < __delta[layerID].size(); ++ neuronID) {
+                __delta[layerID][neuronID] = -__out[layerID][neuronID];                
             }
+            __delta[layerID][pLabel] += 1.;
 
             D
             s;
 
             while (0 < layerID) {
                  -- layerID;
-                for (SIZE neuronFromID = 0; neuronFromID < deltas[layerID].size(); ++ neuronFromID) {
+                for (SIZE neuronFromID = 0; neuronFromID < __delta[layerID].size(); ++ neuronFromID) {
                     s = 0.;
-                    for (SIZE neuronToID = 0; neuronToID < deltas[layerID + 1].size(); ++ neuronToID) {
-                        s += deltas[layerID + 1][neuronToID] * weights[layerID + 1][neuronToID][neuronFromID];
+                    for (SIZE neuronToID = 0; neuronToID < __delta[layerID + 1].size(); ++ neuronToID) {
+                        s += __delta[layerID + 1][neuronToID] * __weights[layerID + 1][neuronToID][neuronFromID];
                     }
-                    deltas[layerID][neuronFromID] =  (0 < outputs[layerID][neuronFromID] ? 1 : .001) * s;
+                    __delta[layerID][neuronFromID] = (0 < __out[layerID][neuronFromID] ? 1 : .001) * s;
                 }
             }
 
-            for (SIZE toID = 0; toID < len(outputs[layerID]); ++ toID) {
-                for (SIZE fromID = 0; fromID < len(input); ++ fromID) {
-                    weights[layerID][toID][fromID] += eta * input[fromID] * deltas[layerID][toID];
+            for (SIZE toID = 0; toID < len(__out[layerID]); ++ toID) {
+                for (SIZE fromID = 0; fromID < __input->size(); ++ fromID) {
+                    __weights[layerID][toID][fromID] += eta * (*__input)[fromID] * __delta[layerID][toID];
                 }
-                bias[layerID][toID] -= eta * deltas[layerID][toID]; 
+                __bias[layerID][toID] -= eta * __delta[layerID][toID]; 
             }
             
-            while (++ layerID < len(outputs)) {
-                for (SIZE toID = 0; toID < len(outputs[layerID]); ++ toID) {
-                    for (SIZE fromID = 0; fromID < len(outputs[layerID - 1]); ++ fromID) {
-                        weights[layerID][toID][fromID] += eta * outputs[layerID-1][fromID] * deltas[layerID][toID];
+            while (++ layerID < len(__out)) {
+                for (SIZE toID = 0; toID < len(__out[layerID]); ++ toID) {
+                    for (SIZE fromID = 0; fromID < len(__out[layerID - 1]); ++ fromID) {
+                        __weights[layerID][toID][fromID] += eta * __out[layerID-1][fromID] * __delta[layerID][toID];
                     }
-                    bias[layerID][toID] -= eta * deltas[layerID][toID]; 
+                    __bias[layerID][toID] -= eta * __delta[layerID][toID]; 
                 }
             }
 
             return *this;
+        }
+
+        MLP4ML
+        & teach(VD const & pPattern, SIZE const & pLabel) {
+        
+            return remember(pPattern).teach(pLabel);
+        }
+
+        MLP4ML
+        & teach(D const * const & pPatternData, SIZE const & pLabel) {
+        
+            return remember(pPatternData).teach(pLabel);
+        }
+
+        SIZE
+        label() const {
+
+            VD const
+            & o = __out[len(__out) - 1];
+
+            return static_cast<SIZE>(std::max_element(o.cbegin(), o.cend()) - o.cbegin());
         }
 };
 
