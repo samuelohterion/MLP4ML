@@ -1,4 +1,4 @@
-#include "mlp4ml.hpp"
+#include "mlpclassifier4matlab.hpp"
 
 // void
 // pr(MLP4ML & pMLP, MD const & pPatterns, MD const & pTeachers) {
@@ -20,7 +20,7 @@
 // }
 
 void
-pr(MLP4ML & pMLP, MD const & pPatterns, Vec<SIZE> const & pLabels) {
+pr(MLPClassifier4MatLab & pMLP, MD const & pPatterns, Vec<SIZE> const & pLabels) {
     for (SIZE i = 0; i < len(pPatterns); ++ i) {
         pMLP.remember(pPatterns[i]);
         std::cout << std::setw(3) << std::noshowpos << std::left;
@@ -120,7 +120,7 @@ main() {
 
     srand(3);
 
-    MLP4ML
+    MLPClassifier4MatLab
     mlp4ml({4, 4, 16});
 
     SIZE
@@ -149,7 +149,7 @@ main() {
 
     srand(3);
 
-    MLP4ML
+    MLPClassifier4MatLab
     mlp4mlStd({4, 4, 16});
 
     loop = 0;
@@ -180,7 +180,7 @@ main() {
 
     srand(3);
 
-    MLP4ML
+    MLPClassifier4MatLab
     mlp4mlStd2({4, 4, 16}, .001, -.001, +.001);
 
     loop = 0;

@@ -1,5 +1,5 @@
-#ifndef MLP4ML_HPP
-#define MLP4ML_HPP
+#ifndef MLPCLASSIFIER4MATLAB_HPP_HPP
+#define MLPCLASSIFIER4MATLAB_HPP_HPP
 
 #include "../AlgebraWithSTL/algebra.hpp"
 #include<bits/stdc++.h>
@@ -8,7 +8,7 @@
 
 using namespace alg;
 
-class MLP4ML {
+class MLPClassifier4MatLab {
 
     public:
 
@@ -36,7 +36,7 @@ class MLP4ML {
         weights__,
         sumWeights__;
 
-        MLP4ML
+        MLPClassifier4MatLab
         & resetAccumulators() {
             for (SIZE layerID = 0; layerID < len(this->sumWeights__); ++ layerID) {
                 for (SIZE toID = 0; toID < len(this->sumWeights__[layerID]); ++ toID) {
@@ -50,7 +50,7 @@ class MLP4ML {
             return *this;
         }
 
-        MLP4ML
+        MLPClassifier4MatLab
         & softmax(VD const & pNetSums, VD & pOutputs) {
 
             D  m = *std::max_element(pNetSums.cbegin(), pNetSums.cend());
@@ -64,7 +64,7 @@ class MLP4ML {
         
     public:
 
-        MLP4ML(IDX const & pLayerSizes, D const &pEta = .1, D const &pWeightsMin = -.1, D const &pWeightsMax = +.1) :
+        MLPClassifier4MatLab(IDX const & pLayerSizes, D const &pEta = .1, D const &pWeightsMin = -.1, D const &pWeightsMax = +.1) :
         eta(pEta),
         weightsMin(pWeightsMin),
         weightsMax(pWeightsMax),
@@ -86,13 +86,13 @@ class MLP4ML {
             return this->out__[len(this->out__) - 1];
         }
         
-        MLP4ML
+        MLPClassifier4MatLab
         & remember(VD const & pPattern) {
 
             return this->remember(pPattern.data());
         }
 
-        MLP4ML
+        MLPClassifier4MatLab
         & remember(D const * const & pPatternData) {
 
             this->input__ = pPatternData;
@@ -134,7 +134,7 @@ class MLP4ML {
             return softmax(this->net__[layerID], this->out__[layerID]);
         }
 
-        MLP4ML
+        MLPClassifier4MatLab
         & teachBatch(VD const & pPatterns, Vec<SIZE> const & pLabels) {
 
             resetAccumulators();
@@ -237,7 +237,7 @@ class MLP4ML {
             return *this;
         }
 
-        MLP4ML
+        MLPClassifier4MatLab
         & teach(SIZE const & pLabel) {
 
             SIZE
@@ -281,13 +281,13 @@ class MLP4ML {
             return *this;
         }
 
-        MLP4ML
+        MLPClassifier4MatLab
         & teach(VD const & pPattern, SIZE const & pLabel) {
         
             return remember(pPattern).teach(pLabel);
         }
 
-        MLP4ML
+        MLPClassifier4MatLab
         & teach(D const * const & pPatternData, SIZE const & pLabel) {
         
             return remember(pPatternData).teach(pLabel);
@@ -303,4 +303,4 @@ class MLP4ML {
         }
 };
 
-#endif //MLP4ML
+#endif //MLPCLASSIFIER4MATLAB_HPP
