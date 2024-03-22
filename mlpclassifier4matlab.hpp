@@ -2,7 +2,6 @@
 #define MLPCLASSIFIER4MATLAB_HPP_HPP
 
 #include "../AlgebraWithSTL/algebra.hpp"
-#include<bits/stdc++.h>
 // for matlab copy algebra.* to this directory an include it from here
 // #include "algebra.hpp"
 
