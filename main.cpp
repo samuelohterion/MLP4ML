@@ -27,7 +27,14 @@ pr(MLP4ML & pMLP, MD const & pPatterns, Vec<SIZE> const & pLabels) {
         for (SIZE j = 0; j < len(pPatterns[i]); ++ j) {
             std::cout << std::setw(3) << std::showpos << pPatterns[i][j];
         }
-        std::cout << std::setw(3) << std::noshowpos << std::right << "[" << std::setw(2) << pLabels[i] << "] " << std::setw(2) << pMLP.label() << "  " << std::right << std::setw(5) << round(100 * pMLP.output()[pMLP.label()], 2) << "%" << std::endl;
+        std::cout << std::setw(3) << std::noshowpos << std::right << "[" << std::setw(2) << pLabels[i] << "] " << std::setw(2) << pMLP.label() << "  ";
+        std::cout << "   " << std::right << std::setw(5) << round(100 * pMLP.output()[pMLP.label()], 2) << "%" << "  ";
+
+        for (SIZE outputID = 0; outputID < len(pMLP.output()); ++ outputID) {
+
+            std::cout << std::setw(6) << round(100 * pMLP.output()[outputID], 1);
+        }
+        std::cout << std::endl;
     }
     std::cout << std::endl << std::noshowpos << std::setw(0);
 }
